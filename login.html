@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<title>Green Commute Planner - Login</title>
+<link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+
+<div class="login-box">
+
+<h2>Green Commute Planner</h2>
+
+<label>Email</label>
+<input type="email" id="email" placeholder="Enter your email">
+
+<label>Password</label>
+<input type="password" id="password" placeholder="Enter your password">
+
+<p id="error-msg" class="error">Invalid login</p>
+
+<button onclick="handleLogin()">Login</button>
+
+<p style="text-align:center;margin-top:10px;">
+<a href="register.html">Create Account</a>
+</p>
+
+</div>
+
+<script>
+
+function handleLogin(){
+
+var email=document.getElementById("email").value;
+var password=document.getElementById("password").value;
+
+var users=JSON.parse(localStorage.getItem("gcp_users")||"[]");
+
+for(var i=0;i<users.length;i++){
+
+if(users[i].email===email && users[i].password===password){
+
+localStorage.setItem("gcp_current_user",email);
+
+window.location.href="dashboard.html";
+
+return;
+
+}
+
+}
+
+document.getElementById("error-msg").style.display="block";
+
+}
+
+</script>
+
+</body>
+</html>

@@ -1,0 +1,211 @@
+/* ================= GENERAL ================= */
+
+body{
+  font-family: Arial, sans-serif;
+  background:#f4f4f4;
+  margin:0;
+}
+
+h2{
+  color:#2e7d32;
+}
+
+button{
+  background:#2e7d32;
+  color:white;
+  border:none;
+  padding:10px;
+  border-radius:4px;
+  cursor:pointer;
+}
+
+button:hover{
+  background:#1b5e20;
+}
+
+input{
+  width:100%;
+  padding:8px;
+  margin-bottom:15px;
+  border:1px solid #ccc;
+  border-radius:4px;
+}
+
+/* ================= LOGIN & REGISTER ================= */
+
+.login-box,
+.register-box{
+  background:white;
+  padding:30px;
+  border-radius:8px;
+  border:1px solid #ccc;
+  width:320px;
+  margin:auto;
+  margin-top:100px;
+}
+
+label{
+  display:block;
+  margin-bottom:5px;
+}
+
+.error{
+  color:red;
+  font-size:12px;
+  display:none;
+}
+
+.success{
+  color:green;
+  font-size:12px;
+  display:none;
+  text-align:center;
+}
+
+/* ================= NAVBAR ================= */
+
+.navbar{
+  background:#2e7d32;
+  color:white;
+  padding:12px 20px;
+  display:flex;
+  justify-content:space-between;
+}
+
+.navbar a{
+  color:white;
+  text-decoration:none;
+  margin-left:15px;
+}
+
+/* ================= DASHBOARD ================= */
+
+.container{
+  max-width:900px;
+  margin:30px auto;
+  padding:10px;
+}
+
+.stats-row{
+  display:flex;
+  gap:15px;
+  margin-bottom:20px;
+}
+
+.stat-box{
+  background:white;
+  padding:20px;
+  border-radius:8px;
+  flex:1;
+  text-align:center;
+  box-shadow:0 3px 8px rgba(0,0,0,0.1);
+}
+
+.stat-box h3{
+  margin:0;
+  color:#2e7d32;
+  font-size:24px;
+}
+
+/* ================= ROUTE SEARCH ================= */
+
+.search-box{
+  background:white;
+  border:1px solid #ccc;
+  border-radius:6px;
+  padding:20px;
+}
+
+.search-row{
+  display:flex;
+  gap:10px;
+  margin-bottom:10px;
+}
+
+.search-row input{
+  flex:1;
+}
+
+/* ================= MAP ================= */
+
+#map{
+  height:400px;
+  margin-top:20px;
+  border-radius:6px;
+}
+
+/* ================= RESULT BOX ================= */
+
+#resultBox{
+  margin-top:15px;
+  padding:15px;
+  background:#e8f5e9;
+  border-left:5px solid #2e7d32;
+  display:none;
+  font-size:16px;
+}
+
+/* ================= POPUP ================= */
+
+.popup{
+  position:fixed;
+  top:50%;
+  left:50%;
+  transform:translate(-50%,-50%);
+  background:white;
+  padding:20px;
+  border-radius:10px;
+  box-shadow:0 0 15px rgba(0,0,0,0.3);
+  display:none;
+  width:300px;
+  z-index:1000;
+}
+
+.mode-card{
+  padding:10px;
+  margin:10px 0;
+  border:1px solid #ddd;
+  border-radius:6px;
+  cursor:pointer;
+}
+
+.mode-card:hover{
+  background:#e8f5e9;
+}
+
+/* ================= TABLE ================= */
+
+table{
+  width:100%;
+  margin-top:20px;
+  border-collapse:collapse;
+  background:white;
+}
+
+th,td{
+  padding:10px;
+  border-bottom:1px solid #ddd;
+}
+
+th{
+  background:#2e7d32;
+  color:white;
+}
+
+.mode-card {
+    border: 1px solid #ccc;
+    padding: 10px;
+    margin: 8px;
+    cursor: pointer;
+    border-radius: 8px;
+    transition: 0.3s;
+}
+
+.mode-card:hover {
+    background-color: #e8f5e9;
+}
+
+/* Highlight recommended */
+.mode-card b {
+    color: #2e7d32;
+}

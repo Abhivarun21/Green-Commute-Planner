@@ -1,0 +1,285 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Green Commute Planner</title>
+
+<link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css"/>
+<script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+<link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+
+<!-- NAVBAR -->
+<div class="navbar">
+<h3>Green Commute Planner</h3>
+<div>
+<a href="#" onclick="showDashboard()">Dashboard</a>
+<a href="#" onclick="showHistory()">History</a>
+<a href="login.html" onclick="localStorage.removeItem('gcp_current_user')">Logout</a>
+</div>
+</div>
+
+<!-- DASHBOARD -->
+<div class="container" id="dashboardSection">
+
+<h2>Dashboard</h2>
+
+<div class="stats-row">
+<div class="stat-box"><h3 id="totalTrips">0</h3><p>Total Trips</p></div>
+<div class="stat-box"><h3 id="co2Saved">0 kg</h3><p>CO₂ Saved</p></div>
+<div class="stat-box"><h3 id="ecoTrips">0</h3><p>Eco Trips</p></div>
+<div class="stat-box"><h3 id="moneySpent">₹0</h3><p>Money Spent</p></div>
+</div>
+
+<div class="search-box">
+<h3>Plan Route</h3>
+<input id="from" placeholder="From">
+<input id="to" placeholder="To">
+<button onclick="findRoute()">Find Route</button>
+
+<div id="map"></div>
+</div>
+
+</div>
+
+<!-- HISTORY SECTION -->
+<div class="container" id="historySection" style="display:none;">
+
+<h2>Trip History</h2>
+
+<table>
+<thead>
+<tr>
+<th>From</th>
+<th>To</th>
+<th>Mode</th>
+<th>CO₂</th>
+<th>Cost</th>
+<th>Date</th>
+</tr>
+</thead>
+
+<tbody id="historyTable"></tbody>
+</table>
+
+</div>
+
+<!-- MODE POPUP -->
+<div id="modePopup" class="popup">
+<h3>Select Mode</h3>
+<div id="modeOptions"></div>
+<button onclick="closePopup()">Cancel</button>
+</div>
+
+<script>
+
+const currentUser = localStorage.getItem("gcp_current_user");
+if(!currentUser){ window.location.href="login.html"; }
+
+/* NAVIGATION */
+function showDashboard(){
+document.getElementById("dashboardSection").style.display="block";
+document.getElementById("historySection").style.display="none";
+}
+
+function showHistory(){
+document.getElementById("dashboardSection").style.display="none";
+document.getElementById("historySection").style.display="block";
+loadHistory();
+}
+
+/* MAP */
+var map = L.map('map').setView([17.385,78.486],12);
+L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
+
+var routeLayer;
+
+/* FIND ROUTE */
+async function findRoute(){
+
+var from=document.getElementById("from").value;
+var to=document.getElementById("to").value;
+
+if(!from || !to){
+alert("Enter locations");
+return;
+}
+
+/* GEO CODING */
+let geo1=await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${from}`);
+let data1=await geo1.json();
+
+let geo2=await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${to}`);
+let data2=await geo2.json();
+
+if(!data1.length || !data2.length){
+alert("Invalid locations");
+return;
+}
+
+let start=[data1[0].lon,data1[0].lat];
+let end=[data2[0].lon,data2[0].lat];
+
+/* ROUTE API */
+let response=await fetch("https://api.openrouteservice.org/v2/directions/driving-car/geojson",{
+method:"POST",
+headers:{
+"Content-Type":"application/json",
+"Authorization":"eyJvcmciOiI1YjNjZTM1OTc4NTExMTAwMDFjZjYyNDgiLCJpZCI6IjRlYThlYjcxMWU2NTQ5NTJhZDk2NWU1NzFkMGIzY2Y4IiwiaCI6Im11cm11cjY0In0="
+},
+body:JSON.stringify({coordinates:[start,end]})
+});
+
+let data=await response.json();
+
+if(!data.features){
+alert("Route not found");
+return;
+}
+
+let coords=data.features[0].geometry.coordinates;
+let latlngs=coords.map(c=>[c[1],c[0]]);
+
+if(routeLayer){ map.removeLayer(routeLayer); }
+routeLayer=L.polyline(latlngs).addTo(map);
+map.fitBounds(routeLayer.getBounds());
+
+let distanceKm=data.features[0].properties.summary.distance/1000;
+
+/* BACKEND */
+let emissions=await fetch("http://localhost:3001/api/emission",{
+method:"POST",
+headers:{"Content-Type":"application/json"},
+body:JSON.stringify({distance:distanceKm})
+}).then(r=>r.json());
+
+let costs=await fetch("http://localhost:3001/api/cost",{
+method:"POST",
+headers:{"Content-Type":"application/json"},
+body:JSON.stringify({distance:distanceKm})
+}).then(r=>r.json());
+
+let modes=emissions.map(e=>{
+let costRow=costs.find(c=>c.mode===e.mode);
+
+return {
+mode: e.mode,
+carbon: e.carbon,
+carbon_saved: e.carbon_saved,
+cost: costRow ? costRow.cost : 0
+};
+});
+
+/* POPUP */
+let container=document.getElementById("modeOptions");
+container.innerHTML="";
+
+//  FIND BEST ECO MODE
+let bestEco = modes.reduce((min, m) => 
+    m.carbon < min.carbon ? m : min
+);
+
+// UI
+modes.forEach(m=>{
+let div=document.createElement("div");
+div.className="mode-card";
+
+//  HIGHLIGHT TAG
+let tag = (m.mode === bestEco.mode) 
+    ? "Recommended (Lowest CO₂)" 
+    : "";
+
+div.innerHTML=`
+<b>${m.mode}</b> ${tag}<br>
+CO₂: ${m.carbon} | Saved: ${m.carbon_saved} | ₹${m.cost}
+`;
+
+div.onclick=()=>selectMode(m);
+container.appendChild(div);
+});
+
+document.getElementById("modePopup").style.display="block";
+}
+
+/* SELECT MODE */
+function selectMode(mode){
+document.getElementById("modePopup").style.display="none";
+saveTrip(mode);
+}
+
+/* SAVE TRIP */
+function saveTrip(mode){
+
+fetch("http://localhost:3001/api/save-trip",{
+method:"POST",
+headers:{"Content-Type":"application/json"},
+body:JSON.stringify({
+email:currentUser,
+from:document.getElementById("from").value,
+to:document.getElementById("to").value,
+mode:mode.mode,
+co2:mode.carbon_saved,
+cost:mode.cost
+})
+}).then(()=>loadDashboard());
+
+}
+
+/* DASHBOARD DATA */
+async function loadDashboard(){
+
+let res=await fetch(`http://localhost:3001/api/trips/${currentUser}`);
+let trips=await res.json();
+
+let totalTrips=trips.length;
+let totalCO2=0;
+let ecoTrips=0;
+let money=0;
+
+trips.forEach(t=>{
+totalCO2+=Number(t.co2_saved)||0;
+money+=Number(t.cost)||0;
+if(t.mode!="Car"){ecoTrips++;}
+});
+
+document.getElementById("totalTrips").innerText=totalTrips;
+document.getElementById("co2Saved").innerText=totalCO2.toFixed(2)+" kg";
+document.getElementById("ecoTrips").innerText=ecoTrips;
+document.getElementById("moneySpent").innerText="₹"+money.toFixed(2);
+}
+
+/* HISTORY DATA */
+async function loadHistory(){
+
+let res=await fetch(`http://localhost:3001/api/trips/${currentUser}`);
+let trips=await res.json();
+
+let table="";
+
+trips.forEach(t=>{
+table+=`
+<tr>
+<td>${t.from_location}</td>
+<td>${t.to_location}</td>
+<td>${t.mode}</td>
+<td>${t.co2_saved}</td>
+<td>₹${t.cost}</td>
+<td>${new Date(t.date).toLocaleDateString()}</td>
+</tr>`;
+});
+
+document.getElementById("historyTable").innerHTML=table;
+}
+
+function closePopup(){
+document.getElementById("modePopup").style.display="none";
+}
+
+window.onload=loadDashboard;
+
+</script>
+</body>
+</html>
